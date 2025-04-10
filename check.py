@@ -1,7 +1,6 @@
+import os
 import sys
 import time
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton,  QFrame, QLabel, QProgressBar, QGridLayout
-from PyQt5.QtCore import QThread, pyqtSignal
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -9,10 +8,63 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 import time
-from PyQt5.QtCore import QThread, pyqtSignal, Qt
-from PyQt5.QtGui import QFont, QColor, QPalette
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+import azure.core.exceptions
+import os
+
+def key_value_to_env():
+    credentials = DefaultAzureCredential()
+
+    key_vault_name = "prod-monitoring-kv"
+    vault_url = f"https://{key_vault_name}.vault.azure.net"
+    secret_list = ["NOC-DR-Automation-UserName", "NOC-DR-Automation-UserPassword"]
+
+    try:
+        secret_client = SecretClient(vault_url, credentials)
+        for secret in secret_list:
+            os.environ[secret] = secret_client.get_secret(secret).value
+            # print(os.environ[secret])
+
+    except azure.core.exceptions.ClientAuthenticationError as ex:
+        response = f"Cannot connect to Azure , The error is: \n {ex}"
+        return response
+    except azure.core.exceptions.ResourceNotFoundError as ex:
+        response = f"Error SecretNotFound: \n{ex.message}"
+        return response
+
+    except azure.core.exceptions.HttpResponseError as ex:
+        if ex.reason == "Unauthorized":
+            if ex.reason == "Unauthorized":
+                response = f"Unauthorized error :\n {ex.message}"
+                return response
+            return ex.message
+        
+
+key_value_to_env()
+
+
+username = os.environ.get("NOC-DR-Automation-UserName")
+password = os.environ.get("NOC-DR-Automation-UserPassword")
+
+import sys
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
+import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import customtkinter as ctk
+import tkinter as tk
+from threading import Thread
+from selenium import webdriver
+import time
 
 
 
@@ -207,11 +259,10 @@ def check_feed_content(driver, url):
 def trade_open_stock(driver, url):
     try:
         driver.get(url)
-        print(f"Navigated to stock page: {url}")
         time.sleep(60)
 
-        trade_button = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[@automation-id='trade-button']"))
+        trade_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//et-invest-button//button[contains(@class, 'enabled-trade-button') and @automation-id='trade-button']"))
         )
         driver.execute_script("arguments[0].click();", trade_button)
         print("Trade button clicked.")
@@ -220,6 +271,7 @@ def trade_open_stock(driver, url):
             popup = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "tippy-content"))
             )
+
             driver.execute_script("arguments[0].remove();", popup)
             print("Popup removed.")
         except:
@@ -228,6 +280,12 @@ def trade_open_stock(driver, url):
         WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "form.et-flex-column"))
         )
+
+        btc_section = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//span[@automation-id='open-position-by-value-name' and contains(text(), 'BTC')]"))
+        )
+        driver.execute_script("arguments[0].click();", btc_section)
+        print("BTC section selected.")
 
         amount_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, "//input[@automation-id='open-position-amount-input-amount']"))
@@ -257,15 +315,27 @@ def trade_close_stock(driver, url):
         driver.execute_script("arguments[0].click();", close_all_button)
         print("Close All button clicked.")
 
+        try:
+            popup_close_button = WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located((By.XPATH, "//span[@automation-id='popover-close-button' and contains(@class, 'ets-basic-close-button')]"))
+            )
+            time.sleep(0.5)  
+            
+          
+            actions = ActionChains(driver)
+            actions.move_to_element(popup_close_button).pause(0.2).click().perform()
+            print("Popup closed before confirming trade.")
+        except Exception as e:
+            print(f"No popup to close or failed to close popup: {e}")
+
         confirm_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Confirm')]"))  # Adjust if confirmation button exists
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Confirm')]"))
         )
         driver.execute_script("arguments[0].click();", confirm_button)
         print("Trade closed successfully.")
 
     except Exception as e:
         print(f"Error occurred while trying to close the stock trade: {e}")
-
 
 
 
@@ -347,141 +417,105 @@ test_list = {
     "Price Update Check": lambda driver: test_price_update(driver, "https://ams.etoro.com/watchlists"),
     "Timeframes Check": lambda driver: click_timeframes(driver, "https://ams.etoro.com/markets/btc"),
     "Trade Open Check": lambda driver: trade_open(driver, "https://ams.etoro.com/markets/btc"),
-    "Trade Close Check": lambda driver: trade_close(driver, "https://ams.etoro.com/portfolio/breakdown/ETH"),
+    "Trade Close Check": lambda driver: trade_close(driver, "https://ams.etoro.com/portfolio/breakdown/BTC"),
     "Feed Content Check": lambda driver: check_feed_content(driver, "https://ams.etoro.com/home"),
-    "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/markets/tsla"),
-    "Stock Trade Close Check": lambda driver: trade_close_stock(driver, "https://ams.etoro.com/portfolio/breakdown/NVDA.EXT"),
+    # "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/markets/nvda"),
+    "Stock Trade Close Check": lambda driver: trade_close_stock(driver, "https://ams.etoro.com/portfolio/breakdown/NVDA"),
     "Search Engine Check": lambda driver: check_search_engine(driver, "btc"),
     "Withdraw Tab Check": lambda driver: check_withdraw_tab(driver),
     "Deposit Tab Check": lambda driver: check_deposit_tab(driver),
-    "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/markets/tsla"),
+    "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/markets/nvda"),
+
 
 }
-class TestThread(QThread):
-    update_status = pyqtSignal(str, str)
-    update_progress = pyqtSignal(int)
+
+class TestThread(Thread):
+    def __init__(self, update_callback, progress_callback):
+        super().__init__()
+        self.update_callback = update_callback
+        self.progress_callback = progress_callback
 
     def run(self):
         driver = webdriver.Chrome()
         try:
             for i, (test_name, test_func) in enumerate(test_list.items()):
-                self.update_status.emit(test_name, "Running... ⏳")
-                self.update_progress.emit(int((i + 1) / len(test_list) * 100))
-                
+                self.update_callback(test_name, "Running... ⏳", "#FFA500")  # Orange
+                self.progress_callback(int((i + 1) / len(test_list) * 100))
                 try:
                     test_func(driver)
-                    self.update_status.emit(test_name, "Success ✅")
-                except Exception as e:
-                    self.update_status.emit(test_name, "Failed ❌")
+                    self.update_callback(test_name, "Success ✅", "#4CAF50")  # Green
+                except Exception:
+                    self.update_callback(test_name, "Failed ❌", "#F44336")  # Red
         finally:
             driver.quit()
 
-class MainWindow(QWidget):
+
+class MainApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("DR Check")
-        self.setGeometry(200, 200, 1200, 800)  # Adjust window size for better responsiveness
-        self.setStyleSheet("background-color: #F0F2F5;")
+        self.title("DR Check Dashboard")
+        self.geometry("1280x800")
+        ctk.set_appearance_mode("light")
+        ctk.set_default_color_theme("blue")
 
-        main_layout = QVBoxLayout()
-
-        header = QLabel("DR Check")
-        header.setFont(QFont("Arial", 24, QFont.Bold))
-        header.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(header)
-
-        self.grid_layout = QGridLayout()
         self.test_status = {}
+        self.configure_grid()
 
-        # Dynamically calculate the number of columns based on screen size
-        columns = self.calculate_columns_based_on_screen_width()
-        for idx, test in enumerate(test_list.keys()):
-            card = self.create_test_card(test)
-            self.grid_layout.addWidget(card, idx // columns, idx % columns)
+        self.header()
+        self.card_container()
+        self.create_test_cards()
+        self.footer()
 
-        main_layout.addLayout(self.grid_layout)
+    def configure_grid(self):
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)  # Main content resizes
 
-        # Progress bar (ensure it remains visible)
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setMaximum(100)
-        self.progress_bar.setValue(0)  # Set initial value to 0
-        main_layout.addWidget(self.progress_bar, alignment=Qt.AlignCenter)
+    def header(self):
+        title = ctk.CTkLabel(self, text="DR Check Dashboard", font=ctk.CTkFont(size=28, weight="bold"))
+        title.grid(row=0, column=0, pady=20, sticky="n")
 
-        self.start_button = QPushButton("Start Tests")
-        self.start_button.setStyleSheet("""
-            background-color: #4CAF50;  # Green color
-            color: white;
-            font-size: 16px;
-            padding: 10px 20px;
-            border-radius: 5px;
-            border: none;
-        """)
-        self.start_button.setFont(QFont("Arial", 14, QFont.Bold))  # Larger font for better clarity
-        self.start_button.clicked.connect(self.start_tests)
-        main_layout.addWidget(self.start_button, alignment=Qt.AlignCenter)
+    def card_container(self):
+        self.scroll_frame = ctk.CTkScrollableFrame(self, fg_color="#F4F4F4", corner_radius=0)
+        self.scroll_frame.grid(row=1, column=0, padx=40, pady=10, sticky="nsew")
+        self.scroll_frame.grid_columnconfigure((0, 1, 2), weight=1)
 
-        self.setLayout(main_layout)
+    def footer(self):
+        self.progress_bar = ctk.CTkProgressBar(self, height=20, width=600)
+        self.progress_bar.set(0)
+        self.progress_bar.grid(row=2, column=0, pady=(10, 5), sticky="n")
 
-    def create_test_card(self, test_name):
-        card = QFrame()
-        card.setStyleSheet("""
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        margin: 15px;
-        border: 1px solid #E0E0E0;
-        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);  # Subtle shadow for depth
-        min-width: 250px;  # Ensure consistent card size
-    """)
-        layout = QVBoxLayout()
+        self.start_button = ctk.CTkButton(self, text="Start Tests", command=self.start_tests, font=ctk.CTkFont(size=16, weight="bold"))
+        self.start_button.grid(row=3, column=0, pady=(0, 20), sticky="n")
 
-    # Title label for the test name
-        name_label = QLabel(test_name)
-        name_label.setFont(QFont("Arial", 16, QFont.Bold))  # Slightly larger font for titles
-        name_label.setStyleSheet("background: transparent; border: none;")  # Remove any background or border
-        layout.addWidget(name_label, stretch=1)  # Ensure it stretches within the card
+    def create_test_cards(self):
+        for idx, test_name in enumerate(test_list.keys()):
+            card = ctk.CTkFrame(self.scroll_frame, height=120, corner_radius=15, fg_color="white")
+            card.grid(row=idx // 3, column=idx % 3, padx=20, pady=20, sticky="nsew")
+            card.grid_propagate(False)  # Fix card size
 
-    # Status label for test status
-        status_label = QLabel("Not Started")
-        status_label.setFont(QFont("Arial", 14))  # Slightly larger font for better readability
-        status_label.setAlignment(Qt.AlignCenter)
-        status_label.setStyleSheet("background: transparent; border: none;")  # Remove any background or border
-        layout.addWidget(status_label, stretch=2)  # Ensure status label stretches
+            name_label = ctk.CTkLabel(card, text=test_name, font=ctk.CTkFont(size=16, weight="bold"), text_color="#333333")
+            name_label.pack(pady=(15, 5))
 
-        self.test_status[test_name] = status_label
-        card.setLayout(layout)
+            status_label = ctk.CTkLabel(card, text="Not Started", font=ctk.CTkFont(size=14), text_color="#555555")
+            status_label.pack(pady=(0, 10))
 
-        return card
-
-
-    def calculate_columns_based_on_screen_width(self):
-        screen_width = self.screen().availableGeometry().width()
-        
-        # Calculate number of columns based on screen width, a simple ratio
-        if screen_width >= 1920:  # For large screens
-            return 4
-        elif screen_width >= 1280:  # For medium-sized screens
-            return 3
-        else:  # For small screens
-            return 2
+            self.test_status[test_name] = status_label
 
     def start_tests(self):
-        self.test_thread = TestThread()
-        self.test_thread.update_status.connect(self.update_test_status)
-        self.test_thread.update_progress.connect(self.update_progress)
-        self.test_thread.start()
+        self.thread = TestThread(self.update_status, self.update_progress)
+        self.thread.start()
 
-    def update_test_status(self, test_name, status):
+    def update_status(self, test_name, status_text, color):
         if test_name in self.test_status:
-            self.test_status[test_name].setText(status)
-            color = "#4CAF50" if "Success" in status else "#F44336" if "Failed" in status else "#FF9800"
-            self.test_status[test_name].setStyleSheet(f"color: {color};")
+            self.test_status[test_name].configure(text=status_text, text_color=color)
 
     def update_progress(self, value):
-        self.progress_bar.setValue(value)
+        self.progress_bar.set(value / 100)
+
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec_())
+    key_value_to_env()
+
+    app = MainApp()
+    app.mainloop()
+
