@@ -7,13 +7,16 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
-import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 import azure.core.exceptions
-import os
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
+import customtkinter as ctk
+import tkinter as tk
+from threading import Thread
 
 def key_value_to_env():
     credentials = DefaultAzureCredential()
@@ -49,22 +52,7 @@ key_value_to_env()
 username = os.environ.get("NOC-DR-Automation-UserName")
 password = os.environ.get("NOC-DR-Automation-UserPassword")
 
-import sys
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.keys import Keys
-import time
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-import customtkinter as ctk
-import tkinter as tk
-from threading import Thread
-from selenium import webdriver
-import time
+
 
 
 
