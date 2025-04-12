@@ -246,51 +246,50 @@ def check_feed_content(driver, url):
 
 def trade_open_stock(driver, url):
     try:
-        driver.get(url)
-        time.sleep(60)
+        wait = WebDriverWait(driver, 15)
 
-        trade_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//et-invest-button//button[contains(@class, 'enabled-trade-button') and @automation-id='trade-button']"))
-        )
-        driver.execute_script("arguments[0].click();", trade_button)
-        print("Trade button clicked.")
+        driver.get(url)
+        time.sleep(1.5)
+
+        driver.get("https://ams.etoro.com/portfolio/overview")
+        time.sleep(2)
+
+        stocks_filter = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@automation-id='portfolio-header-filter-bar-instrument-instrumentType.5']")))
+        time.sleep(1)
+        stocks_filter.click()
+        time.sleep(1.5)
+
+        trade_buttons = wait.until(EC.presence_of_all_elements_located((By.XPATH, "//button[@automation-id='trade-button']")))
+        time.sleep(1)
+        trade_buttons[0].click()
+        time.sleep(2)
+
+        trade_dialog = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "open-position-by-value")))
+        time.sleep(1)
 
         try:
-            popup = WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "tippy-content"))
-            )
-
-            driver.execute_script("arguments[0].remove();", popup)
-            print("Popup removed.")
+            tippy = driver.find_element(By.CSS_SELECTOR, "[data-tippy-root]")
+            driver.execute_script("arguments[0].remove();", tippy)
+            time.sleep(0.5)
         except:
-            print("No popup found.")
+            pass
 
-        WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "form.et-flex-column"))
-        )
-
-        btc_section = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//span[@automation-id='open-position-by-value-name' and contains(text(), 'BTC')]"))
-        )
-        driver.execute_script("arguments[0].click();", btc_section)
-        print("BTC section selected.")
-
-        amount_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@automation-id='open-position-amount-input-amount']"))
-        )
+        amount_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@automation-id='open-position-amount-input-amount']")))
+        time.sleep(0.5)
         amount_input.clear()
+        time.sleep(0.3)
         amount_input.send_keys("10")
-        print("Trade amount entered.")
+        time.sleep(1)
 
-        buy_button = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[@automation-id='open-position-by-value-submit-button']"))
-        )
-        driver.execute_script("arguments[0].click();", buy_button)
-        print("Buy button clicked.")
-        time.sleep(3)
+        buy_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@automation-id='open-position-by-value-submit-button']")))
+        buy_button.click()
+        time.sleep(1.5)
+
+        return "Trade placed successfully"
 
     except Exception as e:
-        print(f"Error occurred during trade open: {e}")
+        print("Error in trade_open_stock:", e)
+        return "Trade failed"
 
 def trade_close_stock(driver, url):
     try:
@@ -406,14 +405,12 @@ test_list = {
     "Timeframes Check": lambda driver: click_timeframes(driver, "https://ams.etoro.com/markets/btc"),
     "Trade Open Check": lambda driver: trade_open(driver, "https://ams.etoro.com/markets/btc"),
     "Trade Close Check": lambda driver: trade_close(driver, "https://ams.etoro.com/portfolio/breakdown/BTC"),
+    "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/portfolio/overview"),
     "Feed Content Check": lambda driver: check_feed_content(driver, "https://ams.etoro.com/home"),
-    # "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/markets/nvda"),
     "Stock Trade Close Check": lambda driver: trade_close_stock(driver, "https://ams.etoro.com/portfolio/breakdown/NVDA"),
     "Search Engine Check": lambda driver: check_search_engine(driver, "btc"),
     "Withdraw Tab Check": lambda driver: check_withdraw_tab(driver),
-    "Deposit Tab Check": lambda driver: check_deposit_tab(driver),
-    "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/markets/nvda"),
-
+    "Deposit Tab Check": lambda driver: check_deposit_tab(driver)
 
 }
 
