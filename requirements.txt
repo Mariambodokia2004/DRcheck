@@ -1,0 +1,6 @@
+selenium
+azure-identity
+azure-keyvault-secrets
+azure-core
+customtkinter
+pyinstaller
