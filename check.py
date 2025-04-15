@@ -394,18 +394,18 @@ def check_deposit_tab(driver):
 
 test_list = {
     "Login": lambda driver: login(driver, username, password),
-    # "Portfolio Check": lambda driver: test_portfolio(driver),
-    # "History Check": lambda driver: test_history(driver, "https://ams.etoro.com/portfolio/history"),
-    # "Price Update Check": lambda driver: test_price_update(driver, "https://ams.etoro.com/watchlists"),
-    # "Timeframes Check": lambda driver: click_timeframes(driver, "https://ams.etoro.com/markets/btc"),
-    # "Trade Open Check": lambda driver: trade_open(driver, "https://ams.etoro.com/markets/btc"),
-    # "Trade Close Check": lambda driver: trade_close(driver, "https://ams.etoro.com/portfolio/breakdown/BTC"),
-    # "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/portfolio/overview"),
-    # "Feed Content Check": lambda driver: check_feed_content(driver, "https://ams.etoro.com/home"),
+    "Portfolio Check": lambda driver: test_portfolio(driver),
+    "History Check": lambda driver: test_history(driver, "https://ams.etoro.com/portfolio/history"),
+    "Price Update Check": lambda driver: test_price_update(driver, "https://ams.etoro.com/watchlists"),
+    "Timeframes Check": lambda driver: click_timeframes(driver, "https://ams.etoro.com/markets/btc"),
+    "Trade Open Check": lambda driver: trade_open(driver, "https://ams.etoro.com/markets/btc"),
+    "Trade Close Check": lambda driver: trade_close(driver, "https://ams.etoro.com/portfolio/breakdown/BTC"),
+    "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/portfolio/overview"),
+    "Feed Content Check": lambda driver: check_feed_content(driver, "https://ams.etoro.com/home"),
     "Stock Trade Close Check": lambda driver: trade_close_stock(driver, "https://ams.etoro.com/portfolio/breakdown/TSLA"),
-    # "Search Engine Check": lambda driver: check_search_engine(driver, "btc"),
-    # "Withdraw Tab Check": lambda driver: check_withdraw_tab(driver),
-    # "Deposit Tab Check": lambda driver: check_deposit_tab(driver)
+    "Search Engine Check": lambda driver: check_search_engine(driver, "btc"),
+    "Withdraw Tab Check": lambda driver: check_withdraw_tab(driver),
+    "Deposit Tab Check": lambda driver: check_deposit_tab(driver)
 
 }
 
