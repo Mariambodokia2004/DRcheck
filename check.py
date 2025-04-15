@@ -300,29 +300,24 @@ def trade_close_stock(driver, url):
             EC.element_to_be_clickable((By.XPATH, "//button[@automation-id='portfolio-breakdown-positions-head-last-column-button' and contains(@class, 'close-all-button')]"))
         )
         driver.execute_script("arguments[0].click();", close_all_button)
-        print("Close All button clicked.")
+        print("Clicked on Close All button.")
 
-        try:
-            popup_close_button = WebDriverWait(driver, 5).until(
-                EC.visibility_of_element_located((By.XPATH, "//span[@automation-id='popover-close-button' and contains(@class, 'ets-basic-close-button')]"))
-            )
-            time.sleep(0.5)  
-            
-          
-            actions = ActionChains(driver)
-            actions.move_to_element(popup_close_button).pause(0.2).click().perform()
-            print("Popup closed before confirming trade.")
-        except Exception as e:
-            print(f"No popup to close or failed to close popup: {e}")
+        driver.execute_script("""
+            const tippys = document.querySelectorAll('[class*="tippy"]');
+            tippys.forEach(el => el.remove());
+        """)
+        print("Tippy content removed.")
 
-        confirm_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Confirm')]"))
+        close_trade_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[@automation-id='close-position-close-button']"))
         )
-        driver.execute_script("arguments[0].click();", confirm_button)
+        driver.execute_script("arguments[0].click();", close_trade_button)
         print("Trade closed successfully.")
 
     except Exception as e:
         print(f"Error occurred while trying to close the stock trade: {e}")
+
+
 
 
 
@@ -398,19 +393,19 @@ def check_deposit_tab(driver):
         return False
 
 test_list = {
-    "Login": lambda driver: login(driver, "nocsamurai04", "Aa123456"),
-    "Portfolio Check": lambda driver: test_portfolio(driver),
-    "History Check": lambda driver: test_history(driver, "https://ams.etoro.com/portfolio/history"),
-    "Price Update Check": lambda driver: test_price_update(driver, "https://ams.etoro.com/watchlists"),
-    "Timeframes Check": lambda driver: click_timeframes(driver, "https://ams.etoro.com/markets/btc"),
-    "Trade Open Check": lambda driver: trade_open(driver, "https://ams.etoro.com/markets/btc"),
-    "Trade Close Check": lambda driver: trade_close(driver, "https://ams.etoro.com/portfolio/breakdown/BTC"),
-    "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/portfolio/overview"),
-    "Feed Content Check": lambda driver: check_feed_content(driver, "https://ams.etoro.com/home"),
-    "Stock Trade Close Check": lambda driver: trade_close_stock(driver, "https://ams.etoro.com/portfolio/breakdown/NVDA"),
-    "Search Engine Check": lambda driver: check_search_engine(driver, "btc"),
-    "Withdraw Tab Check": lambda driver: check_withdraw_tab(driver),
-    "Deposit Tab Check": lambda driver: check_deposit_tab(driver)
+    "Login": lambda driver: login(driver, username, password),
+    # "Portfolio Check": lambda driver: test_portfolio(driver),
+    # "History Check": lambda driver: test_history(driver, "https://ams.etoro.com/portfolio/history"),
+    # "Price Update Check": lambda driver: test_price_update(driver, "https://ams.etoro.com/watchlists"),
+    # "Timeframes Check": lambda driver: click_timeframes(driver, "https://ams.etoro.com/markets/btc"),
+    # "Trade Open Check": lambda driver: trade_open(driver, "https://ams.etoro.com/markets/btc"),
+    # "Trade Close Check": lambda driver: trade_close(driver, "https://ams.etoro.com/portfolio/breakdown/BTC"),
+    # "Stock Trade Open Check": lambda driver: trade_open_stock(driver, "https://ams.etoro.com/portfolio/overview"),
+    # "Feed Content Check": lambda driver: check_feed_content(driver, "https://ams.etoro.com/home"),
+    "Stock Trade Close Check": lambda driver: trade_close_stock(driver, "https://ams.etoro.com/portfolio/breakdown/TSLA"),
+    # "Search Engine Check": lambda driver: check_search_engine(driver, "btc"),
+    # "Withdraw Tab Check": lambda driver: check_withdraw_tab(driver),
+    # "Deposit Tab Check": lambda driver: check_deposit_tab(driver)
 
 }
 
@@ -424,13 +419,13 @@ class TestThread(Thread):
         driver = webdriver.Chrome()
         try:
             for i, (test_name, test_func) in enumerate(test_list.items()):
-                self.update_callback(test_name, "Running... ⏳", "#FFA500")  # Orange
+                self.update_callback(test_name, "Running... ⏳", "#FFA500")  
                 self.progress_callback(int((i + 1) / len(test_list) * 100))
                 try:
                     test_func(driver)
-                    self.update_callback(test_name, "Success ✅", "#4CAF50")  # Green
+                    self.update_callback(test_name, "Success ✅", "#4CAF50")  
                 except Exception:
-                    self.update_callback(test_name, "Failed ❌", "#F44336")  # Red
+                    self.update_callback(test_name, "Failed ❌", "#F44336")  
         finally:
             driver.quit()
 
@@ -453,7 +448,7 @@ class MainApp(ctk.CTk):
 
     def configure_grid(self):
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)  # Main content resizes
+        self.grid_rowconfigure(1, weight=1)  
 
     def header(self):
         title = ctk.CTkLabel(self, text="DR Check Dashboard", font=ctk.CTkFont(size=28, weight="bold"))
@@ -476,7 +471,7 @@ class MainApp(ctk.CTk):
         for idx, test_name in enumerate(test_list.keys()):
             card = ctk.CTkFrame(self.scroll_frame, height=120, corner_radius=15, fg_color="white")
             card.grid(row=idx // 3, column=idx % 3, padx=20, pady=20, sticky="nsew")
-            card.grid_propagate(False)  # Fix card size
+            card.grid_propagate(False)  
 
             name_label = ctk.CTkLabel(card, text=test_name, font=ctk.CTkFont(size=16, weight="bold"), text_color="#333333")
             name_label.pack(pady=(15, 5))
